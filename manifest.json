@@ -2,7 +2,7 @@
   "name": "Extension",
   "version": "1.0",
   "manifest_version": 2,
-  "permissions": ["tabs", "activeTab", "storage", "contextMenus", "webNavigation", "https://www.youtube.com/*"],
+  "permissions": ["tabs", "activeTab", "storage", "contextMenus", "webNavigation"],
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
