@@ -6,26 +6,22 @@ var attemptedTabId;
 var currentTabId1;
 var strictMode;
 
-
-
-updateStrictMode() // KEEP THIS. IT WILL SET STRICTMODE TO FALSE AND NOT UNDEFINED.
+updateStrictMode(); // KEEP THIS. IT WILL SET STRICTMODE TO FALSE AND NOT UNDEFINED.
 chrome.storage.onChanged.addListener(function (changes, namespace) {
-  if ('strictModeState' in changes) {
+  if ("strictModeState" in changes) {
     updateStrictMode();
   }
 });
 
-chrome.tabs.onActivated.addListener(function(activeInfo) {
+chrome.tabs.onActivated.addListener(function (activeInfo) {
   var currentTabId = activeInfo.tabId;
-  chrome.windows.getCurrent(function(currentWindow) {
-    chrome.tabs.query({ windowId: currentWindow.id }, function(tabs) {
-      var currentTab = tabs.find(function(tab) {
+  chrome.windows.getCurrent(function (currentWindow) {
+    chrome.tabs.query({ windowId: currentWindow.id }, function (tabs) {
+      var currentTab = tabs.find(function (tab) {
         return tab.id === currentTabId;
-        
       });
       if (currentTab) {
         var url = currentTab.url;
-        console.log("URL: " + url);
         var domain = extractDomain(url);
         if (url === null || url === undefined || url === "") {
           url = currentURL;
@@ -35,68 +31,75 @@ chrome.tabs.onActivated.addListener(function(activeInfo) {
         currentURL = url;
         currentDomain = domain;
         currentTabId1 = currentTab.id;
-        console.log("URL: " + currentURL);
-        console.log("Domain: " + currentDomain);
-        console.log("TID: " + currentTabId1);
       }
     });
   });
 });
 
-chrome.tabs.onUpdated.addListener(async function(tabId, changeInfo, tab) {
-  console.log("StrictMode statusasd: " + strictMode);
+chrome.runtime.onMessage.addListener(function (message) {
+  if (message.type === "strictModeUpdate") {
+    strictMode = message.value;
+  }
+});
+
+chrome.tabs.onUpdated.addListener(async function (tabId, changeInfo, tab) {
   if (changeInfo.url) {
-    console.log("New attempted: " + attemptedURL);
-    console.log("current tab: " + currentTabId1);
-    console.log("attempted tab: " + tabId);
     var newDomain = extractDomain(changeInfo.url);
-    if (changeInfo.url.startsWith("chrome://") ) {
+    if (changeInfo.url.startsWith("chrome://")) {
       return;
     } else {
       const url = new URL(changeInfo.url);
-      if (strictMode === false){
-        if (url.protocol === 'https:') {
-          const sslLabsEndpoint = 'https://api.ssllabs.com/api/v3/analyze?host=' + changeInfo.url;
-          const response = await fetch(sslLabsEndpoint);
-          const data = await response.json();
-          if (data.endpoints) {
-            const endpoint = data.endpoints[0];
-            if (['A+', 'A', 'A-', 'B+', 'B'].includes(endpoint.grade)) {
-              console.log("yup!");
-              console.log("Safe domain: " + newDomain);
-            currentDomain = extractDomain(changeInfo.url);
-            currentURL = changeInfo.url;
-              return;
+      if (strictMode === false) {
+        if (url.protocol === "https:" || url.protocol === "http:") {
+          const httpsURL =
+            "https://" + url.hostname + url.pathname + url.search + url.hash;
+          try {
+            const httpsResponse = await fetch(httpsURL);
+            if (httpsResponse.ok) {
+              currentDomain = extractDomain(httpsURL);
+              currentURL = httpsURL;
+              chrome.tabs.update(tabId, { url: currentURL });
+              const sslLabsEndpoint =
+                "https://api.ssllabs.com/api/v3/analyze?host=" + changeInfo.url;
+              try {
+                const response = await fetch(sslLabsEndpoint);
+                const data = await response.json();
+                if (data.endpoints) {
+                  const endpoint = data.endpoints[0];
+                  if (["A+", "A", "A-", "B+", "B"].includes(endpoint.grade)) {
+                    currentDomain = extractDomain(changeInfo.url);
+                    currentURL = changeInfo.url;
+                    chrome.tabs.update(tabId, { url: currentURL });
+                    return;
+                  }
+                }
+              } catch (error) {
+              }
             }
+          } catch (error) {
           }
         }
       }
-      console.log("continue!!");
+
       if (newDomain !== currentDomain) {
         if (tabId !== currentTabId1) {
-          console.log("diff tabId");
           attemptedURL = changeInfo.url;
           attemptedTabId = tabId;
           chrome.tabs.remove(tabId);
         } else {
-          console.log("same tabId");
           attemptedURL = changeInfo.url;
           attemptedTabId = tabId;
           chrome.tabs.update(tabId, { url: currentURL });
         }
-        console.log("New domain: " + newDomain);
+
         chrome.notifications.create({
-          title: "Extension",
+          title: "monkeBLOCK Alert",
           message: "A possible unwanted URL was opened: " + changeInfo.url,
-          iconUrl: "https://cdn.discordapp.com/attachments/1095083022732230786/1108496272727474297/IMG_3011.jpg",
+          iconUrl: "monkeBLOCKmain.png",
           type: "basic",
-          buttons: [
-            { title: "Stay on this page" },
-            { title: "Proceed" }
-          ]
+          buttons: [{ title: "Stay on this page" }, { title: "Proceed" }],
         });
       } else {
-        console.log("Same domain: " + newDomain);
         currentDomain = extractDomain(changeInfo.url);
         currentURL = changeInfo.url;
       }
@@ -104,20 +107,19 @@ chrome.tabs.onUpdated.addListener(async function(tabId, changeInfo, tab) {
   }
 });
 
-
-chrome.notifications.onButtonClicked.addListener(function (notificationId, buttonIndex) {
-  console.log("New attempted111:" + attemptedURL);
+chrome.notifications.onButtonClicked.addListener(function (
+  notificationId,
+  buttonIndex
+) {
   if (buttonIndex === 0) {
-    console.log("User clicked 'No'");
   } else if (buttonIndex === 1) {
-    console.log("User clicked 'Open'");
     currentDomain = extractDomain(attemptedURL);
     currentURL = attemptedURL;
-    chrome.tabs.get(attemptedTabId, function(tab) {
+    chrome.tabs.get(attemptedTabId, function (tab) {
       if (chrome.runtime.lastError || !tab) {
         chrome.tabs.create({ url: attemptedURL });
       }
-      chrome.tabs.update(attemptedTabId, {url: attemptedURL});
+      chrome.tabs.update(attemptedTabId, { url: attemptedURL });
     });
   }
 });
@@ -135,14 +137,11 @@ function extractDomain(url) {
 }
 
 function updateStrictMode() {
-  chrome.storage.sync.get('strictModeState', function (data) {
+  chrome.storage.sync.get("strictModeState", function (data) {
     if (data.strictModeState === undefined) {
       strictMode = false;
-      console.log("StrictMode enabled: " + strictMode);
-    }
-    else {
+    } else {
       strictMode = data.strictModeState;
-      console.log("StrictMode enabled: " + strictMode);
     }
   });
 }

@@ -1,20 +1,41 @@
 {
-  "name": "Extension",
+  "name": "monkeBLOCK",
   "version": "1.0",
   "manifest_version": 2,
-  "permissions": ["tabs", "activeTab", "storage", "contextMenus", "webNavigation", "notifications"],
+  "description": "Pop-Up and Redirect Blocker",
+  "permissions": [
+    "tabs",
+    "activeTab",
+    "storage",
+    "contextMenus",
+    "webNavigation",
+    "notifications"
+  ],
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
-      "js": ["content.js"]
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "content.js"
+      ]
     }
   ],
   "background": {
-    "scripts": ["background.js"],
+    "scripts": [
+      "background.js"
+    ],
     "persistent": false
   },
-  "web_accessible_resources": ["content.js"],
+  "web_accessible_resources": [
+    "content.js"
+  ],
   "browser_action": {
-    "default_popup": "popup.html"
+    "default_popup": "popup.html",
+    "default_icon": "monkeBLOCKicon.png"
+  },
+  "icons": {
+    "16": "monkeBLOCKicon.png",
+    "32": "monkeBLOCKmain.png"
   }
 }
