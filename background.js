@@ -4,7 +4,16 @@ var attemptedURL;
 var initialTabId;
 var attemptedTabId;
 var currentTabId1;
+var strictMode;
 
+
+
+updateStrictMode() // KEEP THIS. IT WILL SET STRICTMODE TO FALSE AND NOT UNDEFINED.
+chrome.storage.onChanged.addListener(function (changes, namespace) {
+  if ('strictModeState' in changes) {
+    updateStrictMode();
+  }
+});
 
 chrome.tabs.onActivated.addListener(function(activeInfo) {
   var currentTabId = activeInfo.tabId;
@@ -34,8 +43,8 @@ chrome.tabs.onActivated.addListener(function(activeInfo) {
   });
 });
 
-
 chrome.tabs.onUpdated.addListener(async function(tabId, changeInfo, tab) {
+  console.log("StrictMode statusasd: " + strictMode);
   if (changeInfo.url) {
     console.log("New attempted: " + attemptedURL);
     console.log("current tab: " + currentTabId1);
@@ -45,18 +54,20 @@ chrome.tabs.onUpdated.addListener(async function(tabId, changeInfo, tab) {
       return;
     } else {
       const url = new URL(changeInfo.url);
-      if (url.protocol === 'https:') {
-        const sslLabsEndpoint = 'https://api.ssllabs.com/api/v3/analyze?host=' + changeInfo.url;
-        const response = await fetch(sslLabsEndpoint);
-        const data = await response.json();
-        if (data.endpoints) {
-          const endpoint = data.endpoints[0];
-          if (['A+', 'A', 'A-', 'B+', 'B'].includes(endpoint.grade)) {
-            console.log("yup!");
-            console.log("Safe domain: " + newDomain);
-          currentDomain = extractDomain(changeInfo.url);
-          currentURL = changeInfo.url;
-            return;
+      if (strictMode === false){
+        if (url.protocol === 'https:') {
+          const sslLabsEndpoint = 'https://api.ssllabs.com/api/v3/analyze?host=' + changeInfo.url;
+          const response = await fetch(sslLabsEndpoint);
+          const data = await response.json();
+          if (data.endpoints) {
+            const endpoint = data.endpoints[0];
+            if (['A+', 'A', 'A-', 'B+', 'B'].includes(endpoint.grade)) {
+              console.log("yup!");
+              console.log("Safe domain: " + newDomain);
+            currentDomain = extractDomain(changeInfo.url);
+            currentURL = changeInfo.url;
+              return;
+            }
           }
         }
       }
@@ -94,7 +105,6 @@ chrome.tabs.onUpdated.addListener(async function(tabId, changeInfo, tab) {
 });
 
 
-
 chrome.notifications.onButtonClicked.addListener(function (notificationId, buttonIndex) {
   console.log("New attempted111:" + attemptedURL);
   if (buttonIndex === 0) {
@@ -106,7 +116,6 @@ chrome.notifications.onButtonClicked.addListener(function (notificationId, butto
     chrome.tabs.get(attemptedTabId, function(tab) {
       if (chrome.runtime.lastError || !tab) {
         chrome.tabs.create({ url: attemptedURL });
-        //chrome.tabs.update(attemptedTabId, {url: attemptedURL});
       }
       chrome.tabs.update(attemptedTabId, {url: attemptedURL});
     });
@@ -123,4 +132,17 @@ function extractDomain(url) {
   domain = domain.split(":")[0];
   domain = domain.split("?")[0];
   return domain;
+}
+
+function updateStrictMode() {
+  chrome.storage.sync.get('strictModeState', function (data) {
+    if (data.strictModeState === undefined) {
+      strictMode = false;
+      console.log("StrictMode enabled: " + strictMode);
+    }
+    else {
+      strictMode = data.strictModeState;
+      console.log("StrictMode enabled: " + strictMode);
+    }
+  });
 }
