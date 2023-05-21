@@ -37,6 +37,7 @@ chrome.tabs.onActivated.addListener(function (activeInfo) {
   });
 });
 
+
 chrome.runtime.onMessage.addListener(function (message) {
   if (message.type === "strictModeUpdate") {
     strictMode = message.value;
@@ -48,67 +49,80 @@ chrome.tabs.onUpdated.addListener(async function (tabId, changeInfo, tab) {
     var newDomain = extractDomain(changeInfo.url);
     for (const prefix of prefixes) {
       if (changeInfo.url.startsWith(prefix)) {
+        currentDomain = extractDomain(changeInfo.url);
+        currentURL = changeInfo.url;
         return;
       }
     }
-    const url = new URL(changeInfo.url);
-    if (strictMode === false) {
-      if (url.protocol === "https:" || url.protocol === "http:") {
-        const httpsURL =
-          "https://" + url.hostname + url.pathname + url.search + url.hash;
+    if (newDomain !== currentDomain) {
+      const url = new URL(changeInfo.url);
+      if (strictMode === false) {
+        const httpsURL = "https://" + url.hostname + url.pathname + url.search + url.hash;
         try {
           const httpsResponse = await fetch(httpsURL);
           if (httpsResponse.ok) {
             currentDomain = extractDomain(httpsURL);
             currentURL = httpsURL;
-            chrome.tabs.update(tabId, { url: currentURL });
             const sslLabsEndpoint =
               "https://api.ssllabs.com/api/v3/analyze?host=" + changeInfo.url;
-            try {
-              const response = await fetch(sslLabsEndpoint);
-              const data = await response.json();
-              if (data.endpoints) {
-                const endpoint = data.endpoints[0];
-                if (["A+", "A", "A-", "B+", "B"].includes(endpoint.grade)) {
-                  currentDomain = extractDomain(changeInfo.url);
-                  currentURL = changeInfo.url;
-                  chrome.tabs.update(tabId, { url: currentURL });
-                  return;
+            let analysisComplete = false;
+            let retryCount = 0;
+            const maxRetries = 5; // Maximum number of retries
+            while (!analysisComplete && retryCount < maxRetries) {
+              try {
+                const response = await fetch(sslLabsEndpoint);
+                const data = await response.json();
+                if (data.status === "READY") {
+                  if (data.endpoints && data.endpoints.length > 0) {
+                    const endpoint = data.endpoints[0];
+                    if (["A+", "A", "A-", "B+", "B"].includes(endpoint.grade)) {
+                      currentDomain = extractDomain(changeInfo.url);
+                      currentURL = changeInfo.url;
+                      chrome.tabs.update(tabId, { url: currentURL });
+                      return;
+                    }
+                  }
+                  analysisComplete = true;
+                } else {
+                  await delay(2000); // Wait for 2 seconds before checking again
+                  retryCount++;
                 }
+              } catch (error) {
+                console.error(error);
               }
-            } catch (error) {
             }
+            if (!analysisComplete) {
+              if (maxRetries === 5){
+                return; // Assume the link to be safe.
+              }
+            }
+          } else {
           }
         } catch (error) {
         }
       }
-    }
-
-    if (newDomain !== currentDomain) {
       if (tabId !== currentTabId1) {
         attemptedURL = changeInfo.url;
         attemptedTabId = tabId;
+        createNoti();
         chrome.tabs.remove(tabId);
       } else {
         attemptedURL = changeInfo.url;
         attemptedTabId = tabId;
+        createNoti();
         chrome.tabs.update(tabId, { url: currentURL });
       }
-
-      chrome.notifications.create({
-        title: "monkeBLOCK Alert",
-        message: "A possible unwanted URL was opened: " + changeInfo.url,
-        iconUrl: "monkeBLOCKmain.png",
-        type: "basic",
-        buttons: [{ title: "Stay on this page" }, { title: "Proceed" }],
-      });
     } else {
       currentDomain = extractDomain(changeInfo.url);
       currentURL = changeInfo.url;
     }
-
   }
 });
+
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 
 chrome.notifications.onButtonClicked.addListener(function (
   notificationId,
@@ -127,6 +141,15 @@ chrome.notifications.onButtonClicked.addListener(function (
   }
 });
 
+function createNoti(){
+  chrome.notifications.create({
+    title: "monkeBLOCK Alert",
+    message: "A possible unwanted URL was opened: " + attemptedURL,
+    iconUrl: "monkeBLOCKmain.png",
+    type: "basic",
+    buttons: [{ title: "Stay on this page" }, { title: "Proceed" }],
+  });
+}
 function extractDomain(url) {
   var domain;
   if (url.indexOf("://") > -1) {
