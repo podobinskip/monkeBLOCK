@@ -35,7 +35,9 @@
     "default_icon": "monkeBLOCKicon.png"
   },
   "icons": {
-    "16": "monkeBLOCKicon.png",
-    "32": "monkeBLOCKmain.png"
+    "48": "monkeBLOCKicon.png",
+    "32": "monkeBLOCKmain.png",
+    "16": "monkeBLOCKicon-greyscale.png"
+
   }
 }

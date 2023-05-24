@@ -5,16 +5,28 @@ var initialTabId;
 var attemptedTabId;
 var currentTabId1;
 var strictMode;
-const prefixes = ["chrome://", "edge://", "brave://", "file:///"]; // Might have to find a different alternative to this.
+var blockingStatus;
+const prefixes = ["chrome://", "edge://", "brave://", "file:///", "about:blank"]; // Might have to find a different alternative to this.
 
 updateStrictMode(); // KEEP THIS. IT WILL SET STRICTMODE TO FALSE AND NOT UNDEFINED.
+updateBlockingStatus(); // KEEP THIS. IT WILL SET BLOCKING STATUS TO ENABLED AND NOT UNDEFINED.
 chrome.storage.onChanged.addListener(function (changes, namespace) {
   if ("strictModeState" in changes) {
     updateStrictMode();
   }
+  if ("blockingStatusState" in changes) {
+    updateBlockingStatus();
+  }
+});
+
+chrome.runtime.onInstalled.addListener(function () {
+  chrome.storage.sync.set({ blockingStatusState: true });
 });
 
 chrome.tabs.onActivated.addListener(function (activeInfo) {
+  if (blockingStatus === false || blockingStatus !== true) {
+    return;
+  }
   var currentTabId = activeInfo.tabId;
   chrome.windows.getCurrent(function (currentWindow) {
     chrome.tabs.query({ windowId: currentWindow.id }, function (tabs) {
@@ -39,12 +51,18 @@ chrome.tabs.onActivated.addListener(function (activeInfo) {
 
 
 chrome.runtime.onMessage.addListener(function (message) {
+  if (blockingStatus === false || blockingStatus !== true) {
+    return;
+  }
   if (message.type === "strictModeUpdate") {
     strictMode = message.value;
   }
 });
 
 chrome.tabs.onUpdated.addListener(async function (tabId, changeInfo, tab) {
+  if (blockingStatus === false || blockingStatus !== true) {
+    return;
+  }
   if (changeInfo.url) {
     var newDomain = extractDomain(changeInfo.url);
     for (const prefix of prefixes) {
@@ -92,7 +110,7 @@ chrome.tabs.onUpdated.addListener(async function (tabId, changeInfo, tab) {
               }
             }
             if (!analysisComplete) {
-              if (maxRetries === 5){
+              if (maxRetries === 5) {
                 return; // Assume the link to be safe.
               }
             }
@@ -141,7 +159,7 @@ chrome.notifications.onButtonClicked.addListener(function (
   }
 });
 
-function createNoti(){
+function createNoti() {
   chrome.notifications.create({
     title: "monkeBLOCK Alert",
     message: "A possible unwanted URL was opened: " + attemptedURL,
@@ -171,3 +189,20 @@ function updateStrictMode() {
     }
   });
 }
+
+function updateBlockingStatus() {
+  chrome.storage.sync.get("blockingStatusState", function (data) {
+    if (blockingStatus === undefined) {
+      blockingStatus = true;
+    }
+    blockingStatus = data.blockingStatusState;
+    if (blockingStatus !== true) {
+      chrome.browserAction.setIcon({ path: "monkeBLOCKicon-greyscale.png" });
+    }
+    else {
+      chrome.browserAction.setIcon({ path: "monkeBLOCKicon.png" });
+    }
+  });
+}
+
+
