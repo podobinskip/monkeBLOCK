@@ -1,77 +1,109 @@
 <!DOCTYPE html>
-<html>
-	<head>
-		<style>
-			body {
-				font-family: Arial, sans-serif;
-				text-align: center;
-				width: 200px;
-				height: 300px;
-			}
+<html lang="en">
+  <head>
+    <title>monkeBLOCK</title>
+    <meta property="og:title" content="monkeBLOCK" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="utf-8" />
+    <meta property="twitter:card" content="summary_large_image" />
 
-			h1 {
-				margin-top: 10px;
-				text-align: center;
-			}
+    <style data-tag="reset-style-sheet">
+      html {  line-height: 1.15;}body {  margin: 0;}* {  box-sizing: border-box;  border-width: 0;  border-style: solid;}p,li,ul,pre,div,h1,h2,h3,h4,h5,h6,figure,blockquote,figcaption {  margin: 0;  padding: 0;}button {  background-color: transparent;}button,input,optgroup,select,textarea {  font-family: inherit;  font-size: 100%;  line-height: 1.15;  margin: 0;}button,select {  text-transform: none;}button,[type="button"],[type="reset"],[type="submit"] {  -webkit-appearance: button;}button::-moz-focus-inner,[type="button"]::-moz-focus-inner,[type="reset"]::-moz-focus-inner,[type="submit"]::-moz-focus-inner {  border-style: none;  padding: 0;}button:-moz-focus,[type="button"]:-moz-focus,[type="reset"]:-moz-focus,[type="submit"]:-moz-focus {  outline: 1px dotted ButtonText;}a {  color: inherit;  text-decoration: inherit;}input {  padding: 2px 4px;}img {  display: block;}html { scroll-behavior: smooth  }
+    </style>
+    <style data-tag="default-style-sheet">
+      html {
+        font-family: Inter;
+        font-size: 16px;
+      }
 
-			p {
-				margin: 0px;
-				font-size: 12px;
-				text-align: center;
-			}
+      body {
+        font-weight: 400;
+        font-style:normal;
+        text-decoration: none;
+        text-transform: none;
+        letter-spacing: normal;
+        line-height: 1.15;
+        color: var(--dl-color-gray-black);
+        background-color: var(--dl-color-gray-white);
 
-			label {
-				display: block;
-				margin: 1px;
-				font-size: 12px;
-				text-align: center;
-			}
+      }
+    </style>
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Gloria+Hallelujah:wght@400&amp;display=swap"
+      data-tag="font"
+    />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&amp;display=swap"
+      data-tag="font"
+    />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&amp;display=swap"
+      data-tag="font"
+    />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&amp;display=swap"
+      data-tag="font"
+    />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&amp;display=swap"
+      data-tag="font"
+    />
+    <link rel="stylesheet" href="./style.css" />
+    <script src="./scripts/popup.js"></script>
+  </head>
+  <body>
+    <div>
+      <link href="./popup.css" rel="stylesheet" />
 
-			small {
-				display: block;
-				margin-top: 10px;
-				margin-bottom: 10px;
-				font-size: 18px;
-				text-align: center;
-			}
-
-			label2 {
-				display: block;
-				margin: 1px;
-				margin-top: 12px;
-				font-size: 12px;
-				text-align: center;
-			}
-
-			label3 {
-				display: block;
-				margin: 1px;
-				margin-top: 12px;
-				margin-bottom: 12px;
-				font-size: 12px;
-				text-align: center;
-			}
-
-			button {
-				margin-top: 1px;
-				font-size: 18px;
-				align-content: center;
-			}
-		</style>
-		<script src="popup.js"></script>
-	</head>
-
-	<body>
-		<h1>monkeBLOCK</h1>
-		<p>Thanks for using monkeBLOCK!</p>
-		<p></p>
-		<p>Please enable Notifications. This will ensure that the extension works.</p>
-		<p>_____________________________</p>
-		<small>SETTINGS:</small>
-		<label3><input type="checkbox" id="blocking-status" checked /> Enable Blocking</label3>
-		<label>StrictMode will block ALL redirects to ANY website. Keep this DISABLED for most cases.</label>
-		<label><input type="checkbox" id="strict-mode" /> StrictMode</label>
-		<label2>Issues? Reload the extension.</label2>
-		<button id="reload-button">Reload</button>
-	</body>
+      <div class="home-container">
+        <div class="home-container1">
+          <img
+            src="img/monkeblockmain.png"
+            alt="image"
+            class="home-image"
+          />
+          <h1 class="home-text">monkeBLOCK</h1>
+        </div>
+        <label class="home-text1">
+          Enable Notifications to receive alerts!
+        </label>
+        <div class="home-container2">
+          <ul class="list home-ul">
+            <li class="list-item home-li">
+              <span class="tooltip">
+                <span class="home-text2">Redirect blocking</span>
+                <span class="tooltiptext">Determines if monkeBLOCK will block redirects. It is recommended to keep this ENABLED at all times.</span>
+              </span>
+              <label class="switch">
+                <input type="checkbox" checked="true" class="home-checkbox" id="blocking-status" />
+                <span class="slider round"></span>
+              </label>
+            </li>
+            <li class="list-item home-li1">
+              <span class="tooltip">
+                <span class="home-text3">StrictMode</span>
+                <span class="tooltiptext">StrictMode is a mode that will block any and all redirects from one website to another, regardless of website certificate status. Recommended to enable only when browsing deeper parts of the internet.</span>
+              </span>
+              <label class="switch">
+                <input type="checkbox" checked="false" class="home-checkbox1" id="strict-mode" />
+                <span class="slider round"></span>
+              </label>
+            </li>
+          </ul>
+        </div>
+        <span class="home-text4">Issues? Reload monkeBLOCK.</span>
+        <button type="button" class="button reload-button" id="reload-button">
+          <span class="home-text5">
+            <span class="home-text6">Reload monkeBLOCK</span>
+            <br />
+          </span>
+        </button>
+      </div>
+    </div>
+  </body>
 </html>

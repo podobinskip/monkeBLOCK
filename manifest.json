@@ -1,6 +1,6 @@
 {
   "name": "monkeBLOCK",
-  "version": "1.0",
+  "version": "1.1",
   "manifest_version": 2,
   "description": "Pop-Up and Redirect Blocker",
   "permissions": [
@@ -17,26 +17,26 @@
         "<all_urls>"
       ],
       "js": [
-        "content.js"
+        "./scripts/content.js"
       ]
     }
   ],
   "background": {
     "scripts": [
-      "background.js"
+      "./scripts/background.js"
     ],
     "persistent": false
   },
   "web_accessible_resources": [
-    "content.js"
+    "./scripts/content.js"
   ],
   "browser_action": {
-    "default_popup": "popup.html",
-    "default_icon": "monkeBLOCKicon.png"
+    "default_popup": "./popup.html",
+    "default_icon": "./img/monkeBLOCKicon.png"
   },
   "icons": {
-    "48": "monkeBLOCKicon.png",
-    "32": "monkeBLOCKmain.png",
-    "16": "monkeBLOCKicon-greyscale.png"
+    "48": "./img/monkeBLOCKicon.png",
+    "32": "./img/monkeBLOCKmain.png",
+    "16": "./img/monkeBLOCKicon-greyscale.png"
   }
 }
