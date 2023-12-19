@@ -94,6 +94,7 @@ chrome.tabs.onUpdated.addListener(async function (tabId, changeInfo, tab) {
 											currentDomain = extractDomain(changeInfo.url);
 											currentURL = changeInfo.url;
 											chrome.tabs.update(tabId, { url: currentURL });
+											chrome.tabs.sendMessage(tabId, { grade: endpoint.grade });
 											return;
 										}
 									}
@@ -136,6 +137,38 @@ chrome.tabs.onUpdated.addListener(async function (tabId, changeInfo, tab) {
 function delay(ms) {
 	return new Promise((resolve) => setTimeout(resolve, ms));
 }
+
+chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+    if (currentURL) {
+        const sslLabsEndpoint = 'https://api.ssllabs.com/api/v3/analyze?host=' + currentURL;
+        let analysisComplete = false;
+        let retryCount = 0;
+        const maxRetries = 5; // Maximum number of retries
+        const checkEndpoint = function() {
+            fetch(sslLabsEndpoint)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'READY') {
+                        if (data.endpoints && data.endpoints.length > 0) {
+                            const endpoint = data.endpoints[0];
+                            sendResponse({ grade: endpoint.grade });
+                        }
+                        analysisComplete = true;
+                    } else if (retryCount < maxRetries) {
+                        setTimeout(checkEndpoint, 2000); // Wait for 2 seconds before checking again
+                        retryCount++;
+                    }
+                })
+                .catch(error => {
+                    console.error(error);
+                    sendResponse({ error: error.toString() });
+                });
+        };
+        checkEndpoint();
+    }
+    return true; 
+});
+
 
 chrome.notifications.onButtonClicked.addListener(function (notificationId, buttonIndex) {
 	if (buttonIndex === 0) {
@@ -183,19 +216,26 @@ function updateStrictMode() {
 }
 
 function updateBlockingStatus() {
-	chrome.storage.sync.get('blockingStatusState', function (data) {
-		if (blockingStatus === undefined) {
-			blockingStatus = true;
-		}
-		blockingStatus = data.blockingStatusState;
-		if (blockingStatus !== true) {
-			chrome.browserAction.setIcon({ path: './img/monkeBLOCKicon-greyscale.png' });
-			//createNoti2(0);
-		} else {
-			chrome.browserAction.setIcon({ path: './img/monkeBLOCKicon.png' });
-			//createNoti2(1);
-		}
-	});
+    chrome.storage.sync.get('blockingStatusState', function (data) {
+        if (blockingStatus === undefined) {
+            blockingStatus = true;
+        }
+        blockingStatus = data.blockingStatusState;
+
+        chrome.tabs.query({}, function (tabs) {
+            tabs.forEach(tab => {
+                chrome.tabs.sendMessage(tab.id, { blockingStatus: blockingStatus });
+            });
+        });
+
+        if (blockingStatus !== true) {
+            chrome.browserAction.setIcon({ path: './img/monkeBLOCKicon-greyscale.png' });
+            //createNoti2(0);
+        } else {
+            chrome.browserAction.setIcon({ path: './img/monkeBLOCKicon.png' });
+            //createNoti2(1);
+        }
+    });
 }
 
 /*

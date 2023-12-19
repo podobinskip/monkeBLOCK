@@ -15,6 +15,14 @@ document.addEventListener('DOMContentLoaded', function () {
 		blockingStatusCheckbox.checked = data.blockingStatusState;
 	});
 
+	var removeElementsCheckbox = document.getElementById('remove-elements');
+	removeElementsCheckbox.addEventListener('change', function () {
+		chrome.storage.sync.set({ removeElementsState: removeElementsCheckbox.checked });
+	});
+	chrome.storage.sync.get('removeElementsState', function (data) {
+		removeElementsCheckbox.checked = data.removeElementsState;
+	});
+
 	var reloadButton = document.getElementById('reload-button');
 	reloadButton.addEventListener('click', function () {
 		console.log('RELOADING');
