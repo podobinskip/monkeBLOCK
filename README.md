@@ -2,7 +2,7 @@
 ## Developed by: Patrick Podobinski and Dominik Ramut
 ### github.com/podobinskip github.com/dmr1969CE
 
-![My Image](monkeBLOCKbanner.png)
+![monkeBLOCK banner](/img/monkeBLOCKbanner.png)
 
 # About
 monkeBLOCK is a simple pop-up and redirect blocker for Chromium-based browsers.
