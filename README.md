@@ -11,7 +11,7 @@ monkeBLOCK also provides users the ability to enable StrictMode, a mode which di
 
 
 
-*: monkeyBLOCK determines the trustworthiness of a URL using SSL Lab's ssl checker ("https://api.ssllabs.com/api/v3/analyze?host=URL"). Webpages with a poor SSL grade or lack of HTTPS will be blocked by default.
+*: monkeBLOCK determines the trustworthiness of a URL using SSL Lab's ssl checker ("https://api.ssllabs.com/api/v3/analyze?host=URL"). Webpages with a poor SSL grade or lack of HTTPS will be blocked by default.
 
 # DISCLAIMER
 monkeBLOCK IS NOT A PERFECT POP-UP AND REDIRECT BLOCKER. IT SHOULD NOT BE USED AS A STANDALONE SECURE BROWSING TOOL. BY USING monkeBLOCK, ALL RESPONSIBILITY FALLS ON THE USER.
