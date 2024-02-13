@@ -1,6 +1,6 @@
 {
   "name": "monkeBLOCK",
-  "version": "1.1",
+  "version": "1.2.3",
   "manifest_version": 2,
   "description": "Pop-Up and Redirect Blocker",
   "permissions": [

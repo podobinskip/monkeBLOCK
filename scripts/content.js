@@ -1,9 +1,38 @@
-let currentGrade;
+var currentGrade;
 
-chrome.runtime.sendMessage({ url: window.location.href }, function(response) {
-    currentGrade = response.grade;
-    console.log("The grade of the current website is: " + currentGrade);
+// Since SSL Labs api can at times be unreliable, remove potentially malicious elements by default (if Remove malicious elements is enabled, ofc)
+let removeElements;
+
+chrome.storage.sync.get('removeElementsState', function (data) {
+    if (data.removeElementsState === true) {
+        removeElements = true;
+    }
+    startCheckAndRemoval();
 });
+
+chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+    console.log("Received response in content script:", request);
+    if (request.grade){
+        currentGrade = request.grade;
+        console.log("GOT GRADE.");
+        console.log("The grade of the current website is: " + currentGrade);
+        if (['A+', 'A', 'A-'].includes(currentGrade)){
+            console.log("Due to high grade, there will be no removing of elements.");
+            removeElements = false;
+        }
+        else{
+            console.log("Grade is not high, out of precaution suspicious elements will be removed.");
+            removeElements = true;
+            startCheckAndRemoval();
+        }
+    }
+    else{
+        console.log("Grade hasn't been obtained yet, out of precaution, just remove suspicious elements...");
+        removeElements = true;
+        startCheckAndRemoval();
+    }
+});
+
 
 const checkAndRemoveIfMalicious = async (element) => {
     const style = getComputedStyle(element);
@@ -19,11 +48,6 @@ const checkAndRemoveIfMalicious = async (element) => {
     const hasTrackerTypeField = element.getAttribute('trackertype') !== null;
 
     if ((isFullSize && hasVeryHighZIndex) || isOffScreen || hasTrackerTypeField) {
-        if (currentGrade && ['A+', 'A', 'A-'].includes(currentGrade)) {
-            console.log("Due to high grade, there will be no removing of elements.");
-            return; 
-        } else {
-            console.log("Grade is not high, out of precaution suspicious elements will be removed.");
             const logDetails = {
                 isFullSize,
                 isOffScreen,
@@ -36,14 +60,12 @@ const checkAndRemoveIfMalicious = async (element) => {
             console.log('Details:', logDetails);
 
             element.remove();
-        }
+        
     }
 };
 
-chrome.storage.sync.get('removeElementsState', function (data) {
-    const removeElementsEnabled = data.removeElementsState === true;
-
-    if (removeElementsEnabled) {
+function startCheckAndRemoval() {
+    if (removeElements) {
         console.log('Remove elements is ENABLED.');
 
         document.querySelectorAll('*').forEach(checkAndRemoveIfMalicious);
@@ -69,4 +91,5 @@ chrome.storage.sync.get('removeElementsState', function (data) {
     } else {
         console.log('Remove elements is DISABLED.');
     }
-});
+}
+

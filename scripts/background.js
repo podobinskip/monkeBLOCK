@@ -59,9 +59,11 @@ chrome.runtime.onMessage.addListener(function (message) {
 
 chrome.tabs.onUpdated.addListener(async function (tabId, changeInfo, tab) {
 	if (blockingStatus === false || blockingStatus !== true) {
+		chrome.tabs.sendMessage(tabId, { msg: 'BLOCKING DISABLED'});
 		return;
 	}
 	if (changeInfo.url) {
+		chrome.tabs.sendMessage(tabId, { msg: "URL CHANGED " + changeInfo.url });
 		var newDomain = extractDomain(changeInfo.url);
 		for (const prefix of prefixes) {
 			if (changeInfo.url.startsWith(prefix)) {
@@ -71,6 +73,7 @@ chrome.tabs.onUpdated.addListener(async function (tabId, changeInfo, tab) {
 			}
 		}
 		if (newDomain !== currentDomain) {
+			chrome.tabs.sendMessage(tabId, { msg: "domain CHANGED " + currentDomain + " => " + newDomain });
 			const url = new URL(changeInfo.url);
 			if (strictMode === false) {
 				const httpsURL = 'https://' + url.hostname + url.pathname + url.search + url.hash;
@@ -82,7 +85,7 @@ chrome.tabs.onUpdated.addListener(async function (tabId, changeInfo, tab) {
 						const sslLabsEndpoint = 'https://api.ssllabs.com/api/v3/analyze?host=' + changeInfo.url;
 						let analysisComplete = false;
 						let retryCount = 0;
-						const maxRetries = 5; // Maximum number of retries
+						const maxRetries = 3; // Maximum number of retries
 						while (!analysisComplete && retryCount < maxRetries) {
 							try {
 								const response = await fetch(sslLabsEndpoint);
@@ -90,25 +93,30 @@ chrome.tabs.onUpdated.addListener(async function (tabId, changeInfo, tab) {
 								if (data.status === 'READY') {
 									if (data.endpoints && data.endpoints.length > 0) {
 										const endpoint = data.endpoints[0];
+										chrome.tabs.sendMessage(tabId, { grade: endpoint.grade });
 										if (['A+', 'A', 'A-', 'B+', 'B'].includes(endpoint.grade)) {
 											currentDomain = extractDomain(changeInfo.url);
 											currentURL = changeInfo.url;
 											chrome.tabs.update(tabId, { url: currentURL });
-											chrome.tabs.sendMessage(tabId, { grade: endpoint.grade });
+											//chrome.tabs.sendMessage(tabId, { grade: endpoint.grade });
 											return;
 										}
 									}
 									analysisComplete = true;
 								} else {
-									await delay(2000); // Wait for 2 seconds before checking again
 									retryCount++;
 								}
 							} catch (error) {
+								//await delay(500);
+								retryCount++;
+								chrome.tabs.sendMessage(tabId, { grade: 'precautionary' });
 								console.error(error);
 							}
 						}
 						if (!analysisComplete) {
-							if (maxRetries === 5) {
+							if (retryCount === maxRetries) {
+								chrome.tabs.sendMessage(tabId, { grade: 'unavailable' });
+								createNoti('monkeBLOCK Alert', 'Safety checking currently unavailable. Proceed with caution', 'basic', null)
 								return; // Assume the link to be safe.
 							}
 						}
@@ -119,12 +127,12 @@ chrome.tabs.onUpdated.addListener(async function (tabId, changeInfo, tab) {
 			if (tabId !== currentTabId1) {
 				attemptedURL = changeInfo.url;
 				attemptedTabId = tabId;
-				createNoti();
+				createNoti('monkeBLOCK Alert', 'A possible unwanted URL was opened: ' + attemptedURL, 'basic', [{ title: 'Stay on this page' }, { title: 'Proceed' }])
 				chrome.tabs.remove(tabId);
 			} else {
 				attemptedURL = changeInfo.url;
 				attemptedTabId = tabId;
-				createNoti();
+				createNoti('monkeBLOCK Alert', 'A possible unwanted URL was opened: ' + attemptedURL, 'basic', [{ title: 'Stay on this page' }, { title: 'Proceed' }])
 				chrome.tabs.update(tabId, { url: currentURL });
 			}
 		} else {
@@ -137,37 +145,6 @@ chrome.tabs.onUpdated.addListener(async function (tabId, changeInfo, tab) {
 function delay(ms) {
 	return new Promise((resolve) => setTimeout(resolve, ms));
 }
-
-chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
-    if (currentURL) {
-        const sslLabsEndpoint = 'https://api.ssllabs.com/api/v3/analyze?host=' + currentURL;
-        let analysisComplete = false;
-        let retryCount = 0;
-        const maxRetries = 5; // Maximum number of retries
-        const checkEndpoint = function() {
-            fetch(sslLabsEndpoint)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'READY') {
-                        if (data.endpoints && data.endpoints.length > 0) {
-                            const endpoint = data.endpoints[0];
-                            sendResponse({ grade: endpoint.grade });
-                        }
-                        analysisComplete = true;
-                    } else if (retryCount < maxRetries) {
-                        setTimeout(checkEndpoint, 2000); // Wait for 2 seconds before checking again
-                        retryCount++;
-                    }
-                })
-                .catch(error => {
-                    console.error(error);
-                    sendResponse({ error: error.toString() });
-                });
-        };
-        checkEndpoint();
-    }
-    return true; 
-});
 
 
 chrome.notifications.onButtonClicked.addListener(function (notificationId, buttonIndex) {
@@ -184,15 +161,17 @@ chrome.notifications.onButtonClicked.addListener(function (notificationId, butto
 	}
 });
 
-function createNoti() {
+function createNoti(newtitle, newmessage, newtype, newbuttons) {
 	chrome.notifications.create({
-		title: 'monkeBLOCK Alert',
-		message: 'A possible unwanted URL was opened: ' + attemptedURL,
+		title: newtitle,
+		message: newmessage,
 		iconUrl: './img/monkeBLOCKmain.png',
-		type: 'basic',
-		buttons: [{ title: 'Stay on this page' }, { title: 'Proceed' }],
+		type: newtype,
+		buttons: newbuttons,
 	});
 }
+
+
 function extractDomain(url) {
 	var domain;
 	if (url.indexOf('://') > -1) {
