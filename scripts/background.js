@@ -6,6 +6,7 @@ var attemptedTabId;
 var currentTabId1;
 var strictMode;
 var blockingStatus;
+var currentGrade;
 const prefixes = ['chrome://', 'edge://', 'brave://', 'file:///', 'about:blank']; // Might have to find a different alternative to this.
 
 updateStrictMode(); // KEEP THIS. IT WILL SET STRICTMODE TO FALSE AND NOT UNDEFINED.
@@ -57,13 +58,15 @@ chrome.runtime.onMessage.addListener(function (message) {
 	}
 });
 
-chrome.tabs.onUpdated.addListener(async function (tabId, changeInfo, tab) {
+chrome.tabs.onUpdated.addListener(async function (tabId, changeInfo, tab)
+ {
+	//chrome.tabs.sendMessage(tabId, { msg: "onupdate" });
+	chrome.tabs.sendMessage(tabId, { grade: currentGrade });
 	if (blockingStatus === false || blockingStatus !== true) {
-		chrome.tabs.sendMessage(tabId, { msg: 'BLOCKING DISABLED'});
 		return;
 	}
 	if (changeInfo.url) {
-		chrome.tabs.sendMessage(tabId, { msg: "URL CHANGED " + changeInfo.url });
+		//chrome.tabs.sendMessage(tabId, { msg: "change" });
 		var newDomain = extractDomain(changeInfo.url);
 		for (const prefix of prefixes) {
 			if (changeInfo.url.startsWith(prefix)) {
@@ -73,7 +76,7 @@ chrome.tabs.onUpdated.addListener(async function (tabId, changeInfo, tab) {
 			}
 		}
 		if (newDomain !== currentDomain) {
-			chrome.tabs.sendMessage(tabId, { msg: "domain CHANGED " + currentDomain + " => " + newDomain });
+			//chrome.tabs.sendMessage(tabId, { msg: "new domain" });
 			const url = new URL(changeInfo.url);
 			if (strictMode === false) {
 				const httpsURL = 'https://' + url.hostname + url.pathname + url.search + url.hash;
@@ -82,10 +85,10 @@ chrome.tabs.onUpdated.addListener(async function (tabId, changeInfo, tab) {
 					if (httpsResponse.ok) {
 						currentDomain = extractDomain(httpsURL);
 						currentURL = httpsURL;
-						const sslLabsEndpoint = 'https://api.ssllabs.com/api/v3/analyze?host=' + changeInfo.url;
+						let sslLabsEndpoint = 'https://api.ssllabs.com/api/v3/analyze?host=' + changeInfo.url;
 						let analysisComplete = false;
 						let retryCount = 0;
-						const maxRetries = 3; // Maximum number of retries
+						const maxRetries = 5; // Maximum number of retries
 						while (!analysisComplete && retryCount < maxRetries) {
 							try {
 								const response = await fetch(sslLabsEndpoint);
@@ -98,25 +101,24 @@ chrome.tabs.onUpdated.addListener(async function (tabId, changeInfo, tab) {
 											currentDomain = extractDomain(changeInfo.url);
 											currentURL = changeInfo.url;
 											chrome.tabs.update(tabId, { url: currentURL });
-											//chrome.tabs.sendMessage(tabId, { grade: endpoint.grade });
+											chrome.tabs.sendMessage(tabId, { grade: endpoint.grade });
+											currentGrade = endpoint.grade;
 											return;
 										}
+										currentGrade = endpoint.grade;
+										chrome.tabs.sendMessage(tabId, { grade: currentGrade });
 									}
 									analysisComplete = true;
 								} else {
+									await delay(2000); // Wait for 2 seconds before checking again
 									retryCount++;
 								}
 							} catch (error) {
-								//await delay(500);
-								retryCount++;
-								chrome.tabs.sendMessage(tabId, { grade: 'precautionary' });
 								console.error(error);
 							}
 						}
 						if (!analysisComplete) {
-							if (retryCount === maxRetries) {
-								chrome.tabs.sendMessage(tabId, { grade: 'unavailable' });
-								createNoti('monkeBLOCK Alert', 'Safety checking currently unavailable. Proceed with caution', 'basic', null)
+							if (maxRetries === 5) {
 								return; // Assume the link to be safe.
 							}
 						}
@@ -146,7 +148,6 @@ function delay(ms) {
 	return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-
 chrome.notifications.onButtonClicked.addListener(function (notificationId, buttonIndex) {
 	if (buttonIndex === 0) {
 	} else if (buttonIndex === 1) {
@@ -170,7 +171,6 @@ function createNoti(newtitle, newmessage, newtype, newbuttons) {
 		buttons: newbuttons,
 	});
 }
-
 
 function extractDomain(url) {
 	var domain;
