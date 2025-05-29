@@ -1,6 +1,6 @@
 # monkeBLOCK: A Pop-Up and Redirect Blocker
 ## Developed by: Patrick Podobinski and Dominik Ramut
-### github.com/podobinskip github.com/dmr1969CE
+### [gitlab.com/podobinskip](https://gitlab.com/podobinskip) [gitlab.com/dmr1969](https://gitlab.com/dmr1969)
 
 ![monkeBLOCK banner](/img/monkeBLOCKbanner.png)
 
